@@ -64,7 +64,8 @@ class Sql extends AbstractAdapter
             $sql = $this->buildQueryString($configuration);
         }
 
-        if (!preg_match('/(ALTER|CREATE|DROP|RENAME|TRUNCATE|UPDATE|DELETE) /i', $sql, $matches)) {
+        $matches = [];
+        if (!$this->containsDangerousSqlKeyword($sql, $matches)) {
             $sql .= ' LIMIT 0,1';
             $db = Db::get();
             $res = $db->fetchAssociative($sql);
@@ -188,7 +189,8 @@ class Sql extends AbstractAdapter
             }
         }
 
-        if (!preg_match('/(ALTER|CREATE|DROP|RENAME|TRUNCATE|UPDATE|DELETE) /i', $sql, $matches)) {
+        $matches = [];
+        if (!$this->containsDangerousSqlKeyword($sql, $matches)) {
             $condition = implode(' AND ', $condition);
 
             $total = 'SELECT COUNT(*) FROM (' . $sql . ') AS somerandxyz WHERE ' . $condition;
@@ -207,6 +209,24 @@ class Sql extends AbstractAdapter
             'data' => $data,
             'count' => $total,
         ];
+    }
+
+    /**
+     * Returns true when $sql contains a dangerous DML/DDL keyword that should not be allowed.
+     * Comment sequences (-- … and /* … */) are stripped before matching so that payloads like
+     * "DELETE--\nFROM t" cannot bypass the check by hiding the required whitespace inside a comment.
+     * The separator pattern uses \s+ instead of a single space so that tabs and newlines are also caught.
+     *
+     * @param array<int,string> $matches
+     */
+    private function containsDangerousSqlKeyword(string $sql, array &$matches): bool
+    {
+        // Strip block comments  /* ... */
+        $stripped = (string) preg_replace('/\/\*.*?\*\//s', ' ', $sql);
+        // Strip line comments  -- ...
+        $stripped = (string) preg_replace('/--[^\n\r]*/', ' ', $stripped);
+
+        return (bool) preg_match('/(ALTER|CREATE|DROP|RENAME|TRUNCATE|UPDATE|DELETE)\s/i', $stripped, $matches);
     }
 
     public function getAvailableOptions(array $filters, string $field, array $drillDownFilters): array
