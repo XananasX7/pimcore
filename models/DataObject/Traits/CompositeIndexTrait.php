@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Pimcore\Model\DataObject\Traits;
 
 use Doctrine\DBAL\Connection;
+use Pimcore\Model\DataObject\ClassDefinition\Helper\CompositeIndex as CompositeIndexHelper;
 
 /**
  * @internal
@@ -56,6 +57,12 @@ trait CompositeIndexTrait
         foreach ($newIndicesFilteredByType as $newIndex) {
             $key = $newIndex['index_key'];
             $columns = $newIndex['index_columns'];
+
+            CompositeIndexHelper::assertValidIdentifier($key);
+            foreach ($columns as $column) {
+                CompositeIndexHelper::assertValidIdentifier($column);
+            }
+
             $prefixedKey = 'c_' . $key;
 
             $newIndicesMap[$prefixedKey] = implode(',', $columns);

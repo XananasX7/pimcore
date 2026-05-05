@@ -29,6 +29,7 @@ use Pimcore\Model\DataObject;
 use Pimcore\Model\DataObject\ClassDefinition\Data;
 use Pimcore\Model\DataObject\ClassDefinition\Data\FieldDefinitionEnrichmentInterface;
 use Pimcore\Model\DataObject\ClassDefinition\Data\ManyToOneRelation;
+use Pimcore\Model\DataObject\ClassDefinition\Helper\CompositeIndex as CompositeIndexHelper;
 
 /**
  * @method \Pimcore\Model\DataObject\ClassDefinition\Dao getDao()
@@ -995,14 +996,10 @@ final class ClassDefinition extends Model\AbstractModel implements ClassDefiniti
     {
         $class = $this->getFieldDefinitions([]);
         foreach ($compositeIndices as $indexInd => $compositeIndex) {
-            if (!preg_match('/^[a-zA-Z0-9_]+$/', $compositeIndex['index_key'] ?? '')) {
-                throw new \InvalidArgumentException(sprintf('Invalid composite index key "%s": only alphanumeric characters and underscores are allowed.', $compositeIndex['index_key'] ?? ''));
-            }
+            CompositeIndexHelper::assertValidIdentifier($compositeIndex['index_key'] ?? '');
 
             foreach ($compositeIndex['index_columns'] as $fieldInd => $fieldName) {
-                if (!preg_match('/^[a-zA-Z0-9_]+$/', $fieldName)) {
-                    throw new \InvalidArgumentException(sprintf('Invalid composite index column name "%s": only alphanumeric characters and underscores are allowed.', $fieldName));
-                }
+                CompositeIndexHelper::assertValidIdentifier($fieldName);
 
                 if (isset($class[$fieldName]) && $class[$fieldName] instanceof ManyToOneRelation) {
                     $compositeIndices[$indexInd]['index_columns'][$fieldInd] = $fieldName . '__id';
