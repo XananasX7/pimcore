@@ -29,7 +29,6 @@ use Pimcore\Model\DataObject;
 use Pimcore\Model\DataObject\ClassDefinition\Data;
 use Pimcore\Model\DataObject\ClassDefinition\Data\FieldDefinitionEnrichmentInterface;
 use Pimcore\Model\DataObject\ClassDefinition\Data\ManyToOneRelation;
-use Pimcore\Model\DataObject\ClassDefinition\Helper\CompositeIndex as CompositeIndexHelper;
 
 /**
  * @method \Pimcore\Model\DataObject\ClassDefinition\Dao getDao()
@@ -39,6 +38,7 @@ final class ClassDefinition extends Model\AbstractModel implements ClassDefiniti
     use DataObject\ClassDefinition\Helper\VarExport;
     use DataObject\Traits\LocateFileTrait;
     use DataObject\Traits\FieldDefinitionEnrichmentModelTrait;
+    use DataObject\Traits\CompositeIndexTrait;
     use RecursionBlockingEventDispatchHelperTrait;
 
     /**
@@ -996,10 +996,10 @@ final class ClassDefinition extends Model\AbstractModel implements ClassDefiniti
     {
         $class = $this->getFieldDefinitions([]);
         foreach ($compositeIndices as $indexInd => $compositeIndex) {
-            CompositeIndexHelper::assertValidIdentifier($compositeIndex['index_key'] ?? '');
+            self::assertValidIdentifier($compositeIndex['index_key'] ?? '');
 
             foreach ($compositeIndex['index_columns'] as $fieldInd => $fieldName) {
-                CompositeIndexHelper::assertValidIdentifier($fieldName);
+                self::assertValidIdentifier($fieldName);
 
                 if (isset($class[$fieldName]) && $class[$fieldName] instanceof ManyToOneRelation) {
                     $compositeIndices[$indexInd]['index_columns'][$fieldInd] = $fieldName . '__id';

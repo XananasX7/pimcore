@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Pimcore\Model\DataObject\Traits;
 
 use Doctrine\DBAL\Connection;
-use Pimcore\Model\DataObject\ClassDefinition\Helper\CompositeIndex as CompositeIndexHelper;
 
 /**
  * @internal
@@ -58,9 +57,9 @@ trait CompositeIndexTrait
             $key = $newIndex['index_key'];
             $columns = $newIndex['index_columns'];
 
-            CompositeIndexHelper::assertValidIdentifier($key);
+            self::assertValidIdentifier($key);
             foreach ($columns as $column) {
-                CompositeIndexHelper::assertValidIdentifier($column);
+                self::assertValidIdentifier($column);
             }
 
             $prefixedKey = 'c_' . $key;
@@ -95,6 +94,21 @@ trait CompositeIndexTrait
             ));
             $this->db->executeQuery(
                 'ALTER TABLE ' . $quotedTable . ' ADD INDEX ' . $this->db->quoteIdentifier($key) . ' (' . $quotedColumns . ');'
+            );
+        }
+    }
+
+    /**
+     * @throws \InvalidArgumentException if the identifier contains disallowed characters
+     */
+    private static function assertValidIdentifier(string $identifier): void
+    {
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $identifier)) {
+            throw new \InvalidArgumentException(
+                sprintf(
+                    'Invalid composite index identifier "%s": only alphanumeric characters and underscores are allowed.',
+                    $identifier
+                )
             );
         }
     }
