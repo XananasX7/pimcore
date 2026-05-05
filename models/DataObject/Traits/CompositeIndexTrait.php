@@ -52,11 +52,14 @@ trait CompositeIndexTrait
         });
 
         $newIndicesMap = [];
+        $newIndicesColumnsMap = [];
         foreach ($newIndicesFilteredByType as $newIndex) {
             $key = $newIndex['index_key'];
             $columns = $newIndex['index_columns'];
+            $prefixedKey = 'c_' . $key;
 
-            $newIndicesMap['c_' . $key] = implode(',', $columns);
+            $newIndicesMap[$prefixedKey] = implode(',', $columns);
+            $newIndicesColumnsMap[$prefixedKey] = $columns;
         }
 
         $drop = [];
@@ -73,14 +76,18 @@ trait CompositeIndexTrait
             }
         }
 
+        $quotedTable = $this->db->quoteIdentifier($table);
         foreach ($drop as $key) {
-            $this->db->executeQuery('ALTER TABLE `'.$table.'` DROP INDEX `'. $key.'`;');
+            $this->db->executeQuery('ALTER TABLE ' . $quotedTable . ' DROP INDEX ' . $this->db->quoteIdentifier($key) . ';');
         }
 
         foreach ($add as $key) {
-            $columnName = $newIndicesMap[$key];
+            $quotedColumns = implode(', ', array_map(
+                fn (string $col) => $this->db->quoteIdentifier($col),
+                $newIndicesColumnsMap[$key]
+            ));
             $this->db->executeQuery(
-                'ALTER TABLE `'.$table.'` ADD INDEX `' . $key.'` ('.$columnName.');'
+                'ALTER TABLE ' . $quotedTable . ' ADD INDEX ' . $this->db->quoteIdentifier($key) . ' (' . $quotedColumns . ');'
             );
         }
     }
